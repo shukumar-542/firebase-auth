@@ -7,11 +7,15 @@ import { getAuth, signInWithPopup } from "firebase/auth";
 import { useState } from 'react';
 import { signOut } from "firebase/auth";
 import {createUserWithEmailAndPassword } from "firebase/auth";
+import {signInWithEmailAndPassword } from "firebase/auth";
+import { updateProfile } from "firebase/auth";
 
  
 initializeApp(firebaseConfig);
 
 function App() {
+
+  const [newUser, setNewUser] =useState(false);
   const [user, setUser] = useState({
     isSingIn : false,
     name : '',
@@ -22,12 +26,6 @@ function App() {
     success : false
   
   });
-
-  
-
- 
-  
-
   const provider = new GoogleAuthProvider();
   const handleSignIn =()=>{
     const auth = getAuth();
@@ -88,18 +86,21 @@ function App() {
   }
 
   const handleSubmit =(e)=>{
-    console.log(user.email, user.password);
-    if(user.email && user.password){
+    // console.log(user.email, user.password);
+    if(newUser && user.email && user.password){
       const auth = getAuth();
   createUserWithEmailAndPassword(auth, user.email, user.password)
   .then((userCredential) => {
     // Signed in 
     const user = userCredential.user;
+
     // ...
     const newUserInfo = {...user}
     newUserInfo.error = ''
     newUserInfo.success = true
     setUser(newUserInfo);
+    updateUserNane(user.name);
+
   })
   .catch((error) => {
     const newUserInfo = {...user};
@@ -113,9 +114,51 @@ function App() {
   });
 
     }
+    if(!newUser && user.email && user.password){
+      const auth = getAuth();
+      signInWithEmailAndPassword(auth, user.email, user.password)
+      .then((userCredential) => {
+    
+      const user = userCredential.user;
+      
+
+      const newUserInfo = {...user}
+      newUserInfo.error = ''
+      newUserInfo.success = true
+      setUser(newUserInfo);
+    console.log(user);
+
+      // console.log(userCredential.user);
+    
+    
+  })
+  .catch((error) => {
+    const newUserInfo = {...user};
+    newUserInfo.error = error.code;
+    newUserInfo.success = false
+    setUser(newUserInfo);
+  });
+    
+    }
     e.preventDefault();
    
   }
+
+  const updateUserNane = (name) =>{
+    const auth = getAuth();
+    updateProfile(auth.currentUser, {
+    displayName: name
+    }).then(() => {
+  // Profile updated!
+  console.log('user name update succesfully');
+  // ...
+    }).catch((error) => {
+      console.log(error);
+  // An error occurred
+  // ...
+});
+  }
+  
 
   return (
     <div className="App">
@@ -133,21 +176,22 @@ function App() {
       <h1>Authentication</h1>
     
    
-     
+     <input type="checkbox" onChange={() =>{setNewUser( !newUser)}} name="newUser" id="" />
+     <label htmlFor="newUser">New User Signup</label>
    <form onSubmit={handleSubmit}>
-      {/* <input type="text" name="name" onBlur={handleOnBlur} placeholder='Enter your Name' required  /><br/> */}
+     {newUser && <input type="text" name="name" onBlur={handleOnBlur} placeholder='Enter your Name' required  />}<br/>
       <input type="text" onBlur={handleOnBlur} placeholder='Enter Your Email' name="email" required />
       <br/>
       <input type="password" onBlur={handleOnBlur} placeholder='Enter Your Password'  name="password" required />
       <br/>
-      <input type="Submit" />
+      <input type="Submit" value={newUser ? 'singUp' : 'signin'} />
       {/* <input type="button" value="Submit" /> */}
 
      
    </form>
    <p style={{color : 'red'}}>{user.error}</p>
    {
-     user.success && <p style={{color : 'green'}}>Your Account Is Created</p>
+     user.success && <p style={{color : 'green'}}>Your Account Is {newUser ? 'created' : 'logged successfully'}</p>
    }
    
 
